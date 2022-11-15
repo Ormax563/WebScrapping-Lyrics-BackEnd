@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  lambda-app to scrap lyrics of songs
+
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 3072
+  Api:
+    TracingEnabled: True
+Resources:
+  TopAuthorsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      CacheClusterEnabled: true
+      CacheClusterSize: '0.5'
+      MethodSettings:
+        - CachingEnabled: true
+          CacheTtlInSeconds: 60
+          HttpMethod: '*'
+          ResourcePath: '/*'
+      Cors:
+        AllowMethods: "'GET, OPTIONS'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+  TopAuthorsSongs:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/top_authors_songs/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Architectures:
+        - x86_64
+      Events:
+        SongProcess:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref TopAuthorsApi
+            Path: /top_authors
+            Method: get
+  SongsByAuthor:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/songs_by_author/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Architectures:
+        - x86_64
+      Events:
+        SongProcess:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref TopAuthorsApi
+            Path: /songs_by_author
+            Method: post
+            
+
